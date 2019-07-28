@@ -13,10 +13,39 @@
 #
 
 if [ "$#" -ge 1 ]; then
-    GAPDIR=$1
-    shift
+  GAPDIR=$1
+  shift
 else
-    GAPDIR=../..
+  GAPDIR=../..
+fi
+
+LOCATIONS="/opt /usr/local /usr"
+
+nmzlocation()
+{
+  if [ $# -eq 1 ]; then
+    LOCATIONS="$1 $LOCATIONS"
+  fi
+  NMZDIR=
+  for l in $LOCATIONS; do
+    if [ -f "${l}/include/libnormaliz/version.h" ]; then
+      NMZDIR=$l
+      break
+    fi
+  done
+}
+
+nmzlocation 
+
+if [ "x${NMZDIR}" != "x" ]; then
+  NORMALIZ_VERSION=`sed -rne 's/(.define [A-Z]+_VERSION[[:space:]]*) ([0-9])/\2/ p' ${NMZDIR}/include/libnormaliz/version.h`
+  echo "Normaliz is installed in ${NMZDIR}"
+else
+  NORMALIZ_VERSION=
+  echo
+  echo "Unable to find Normaliz installed."
+  echo "This script will compile it for you."
+  echo
 fi
 
 # make path absolut
@@ -73,55 +102,62 @@ fi
 # allow overriding the normaliz version via env var or argument, so that
 # we can test with many different ones
 if [ -z $NORMALIZ_VERSION ]; then
-    NORMALIZ_VERSION=3.4.0
-    NORMALIZ_SHA256=01eae802621beb3bdbde57bae32a1251d40ecc4a01660a50540c1e1f5eeb9c24
-#     NORMALIZ_VERSION=3.7.2
-#     NORMALIZ_SHA256=436a870a1ab9a5e0c2330f5900d904dc460938c17428db1c729318dbd9bf27aa
-fi
-NORMALIZ_BASE=normaliz-${NORMALIZ_VERSION}
-NORMALIZ_TAR=${NORMALIZ_BASE}.tar.gz
-NORMALIZ_URL=https://github.com/Normaliz/Normaliz/releases/download/v${NORMALIZ_VERSION}/${NORMALIZ_TAR}
+  NORMALIZ_VERSION=3.4.0
+  NORMALIZ_SHA256=01eae802621beb3bdbde57bae32a1251d40ecc4a01660a50540c1e1f5eeb9c24
+#   NORMALIZ_VERSION=3.7.2
+#   NORMALIZ_SHA256=436a870a1ab9a5e0c2330f5900d904dc460938c17428db1c729318dbd9bf27aa
+# fi
+  NORMALIZ_BASE=normaliz-${NORMALIZ_VERSION}
+  NORMALIZ_TAR=${NORMALIZ_BASE}.tar.gz
+  NORMALIZ_URL=https://github.com/Normaliz/Normaliz/releases/download/v${NORMALIZ_VERSION}/${NORMALIZ_TAR}
 
-echo
-echo "##"
-echo "## downloading ${NORMALIZ_TAR}"
-echo "##"
-etc/download.sh ${NORMALIZ_URL} ${NORMALIZ_SHA256}
+  echo
+  echo "##"
+  echo "## downloading ${NORMALIZ_TAR}"
+  echo "##"
+  etc/download.sh ${NORMALIZ_URL} ${NORMALIZ_SHA256}
 
-# extract it
-echo
-echo "##"
-echo "## extracting ${NORMALIZ_TAR}"
-echo "##"
-rm -rf ${NORMALIZ_BASE}
-tar xvf ${NORMALIZ_TAR}
+  # extract it
+  echo
+  echo "##"
+  echo "## extracting ${NORMALIZ_TAR}"
+  echo "##"
+  rm -rf ${NORMALIZ_BASE}
+  tar xvf ${NORMALIZ_TAR}
 
-# The cmake build process honors environment variables like
-# GMP_DIR and BOOST_ROOT. So if you need to tell the build
-# process where to find GMP and Boost, you can invoke this
-# script like this:
-#
-#  GMP_DIR=/some/path BOOST_ROOT=/another/path ./build-normaliz.sh $GAPROOT
+  # The cmake build process honors environment variables like
+  # GMP_DIR and BOOST_ROOT. So if you need to tell the build
+  # process where to find GMP and Boost, you can invoke this
+  # script like this:
+  #
+  #  GMP_DIR=/some/path BOOST_ROOT=/another/path ./build-normaliz.sh $GAPROOT
 
-echo "##"
-echo "## compiling Normaliz ${NORMALIZ_VERSION}"
-echo "##"
+  echo "##"
+  echo "## compiling Normaliz ${NORMALIZ_VERSION}"
+  echo "##"
 
-# If GAP was build for 32 bit, also do it for normaliz
-if [ x$GAParch_abi = x"32-bit" ] || [ x$GAP_ABI = x32 ]; then
-    echo "GAP was built for 32 bit"
-    export CXXFLAGS="-m32"
-fi
+  # If GAP was build for 32 bit, also do it for normaliz
+  if [ x$GAParch_abi = x"32-bit" ] || [ x$GAP_ABI = x32 ]; then
+      echo "GAP was built for 32 bit"
+      export CXXFLAGS="-m32"
+  fi
 
-NormalizInstallDir=$PWD/NormalizInstallDir
-rm -rf ${NormalizInstallDir}
-mkdir -p ${NormalizInstallDir}
+  NormalizInstallDir=$PWD/NormalizInstallDir
+  rm -rf ${NormalizInstallDir}
+  mkdir -p ${NormalizInstallDir}
 
-cd ${NORMALIZ_BASE}
-if [ "x$GMP_FLAG" != "x" ]; then
-  ./configure --prefix="${NormalizInstallDir}" --with-gmp=$GMP_FLAG $@
+  cd ${NORMALIZ_BASE}
+  if [ "x$GMP_FLAG" != "x" ]; then
+    ./configure --prefix="${NormalizInstallDir}" --with-gmp=$GMP_FLAG $@
+  else
+    ./configure --prefix="${NormalizInstallDir}" $@
+  fi
+  make -j4
+  make install
 else
-  ./configure --prefix="${NormalizInstallDir}" $@
+  echo 
+  echo "To install NormalizInterface do;"
+  echo "   ./configure --with-gaproot=${GAPDIR} --with-normaliz=${NMZDIR}"
+  echo "   make"
+  echo 
 fi
-make -j4
-make install

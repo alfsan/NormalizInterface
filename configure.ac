@@ -49,12 +49,16 @@ AC_FIND_GAP
 dnl ##
 dnl ## Locate Normaliz
 dnl ##
+AC_NMZ_LOCATE
 
-AC_ARG_WITH([normaliz],
-    [AC_HELP_STRING([--with-normaliz=<path>], [specify root of Normaliz installation])],
-    [NORMALIZ="$with_normaliz"],
-    [NORMALIZ="$PWD/NormalizInstallDir"]
-)
+dnl ## AC_ARG_WITH([normaliz],
+dnl ##     [AC_HELP_STRING([--with-normaliz=<path>], [specify root of Normaliz installation])],
+dnl ## dnl ##    [NORMALIZ="$with_normaliz"],
+dnl ##     [],
+dnl ## dnl ##    [NORMALIZ="$PWD/NormalizInstallDir"]
+dnl ##     [locate_normaliz=yes]
+dnl ## )
+
 NORMALIZ_CPPFLAGS="-I$NORMALIZ/include"
 NORMALIZ_LDPATH="$NORMALIZ/lib"
 NORMALIZ_LDFLAGS="-L$NORMALIZ_LDPATH"
